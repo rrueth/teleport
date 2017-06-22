@@ -166,6 +166,13 @@ func Run(distribution string) {
 	ver := app.Command("version", "Print the version.")
 	app.HelpFlag.Short('h')
 
+	// get one or many resources in the system
+	get := app.Command("get", "Display cluster resources")
+	get.Arg("resource", "Resource type and name").SetValue(&cmdGet.ref)
+	get.Flag("format", "Format output type, one of 'yaml', 'json' or 'text'").Default(formatText).StringVar(&cmdGet.format)
+	get.Flag("namespace", "Namespace of the resources").Hidden().Default(defaults.Namespace).StringVar(&cmdGet.namespace)
+	get.Flag("with-secrets", "Include secrets in resources like certificate authorities or OIDC connectors").Default("false").BoolVar(&cmdGet.withSecrets)
+
 	// user add command:
 	users := app.Command("users", "Manage users logins")
 
@@ -182,13 +189,6 @@ func Run(distribution string) {
 
 	delete := app.Command("del", "Delete resources").Hidden()
 	delete.Arg("resource", "Resource to delete").SetValue(&cmdDelete.ref)
-
-	// get one or many resources in the system
-	get := app.Command("get", "Get one or many objects in the system").Hidden()
-	get.Arg("resource", "Resource type and name").SetValue(&cmdGet.ref)
-	get.Flag("format", "Format output type, one of 'yaml', 'json' or 'text'").Default(formatText).StringVar(&cmdGet.format)
-	get.Flag("namespace", "Namespace of the resources").Default(defaults.Namespace).StringVar(&cmdGet.namespace)
-	get.Flag("with-secrets", "Include secrets in resources like certificate authorities or OIDC connectors").Default("false").BoolVar(&cmdGet.withSecrets)
 
 	// upsert one or many resources
 	create := app.Command("create", "Create or update a resource").Hidden()
@@ -821,7 +821,7 @@ func (c *TokenCommand) Del(client *auth.TunClient) error {
 
 // Get prints one or many resources of a certain type
 func (g *GetCommand) Get(client *auth.TunClient) error {
-	collection, err := g.getCollection(client)
+	collection, err := g.getResources(client)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -833,7 +833,7 @@ func (g *GetCommand) Get(client *auth.TunClient) error {
 	case formatYAML:
 		return collection.writeYAML(os.Stdout)
 	}
-	return trace.BadParameter("unsupported format")
+	return trace.BadParameter("unsupported format: '%s'", g.format)
 }
 
 // Create updates or insterts one or many resources
@@ -1023,7 +1023,9 @@ func (d *DeleteCommand) Delete(client *auth.TunClient) error {
 	return nil
 }
 
-func (g *GetCommand) getCollection(client auth.ClientI) (collection, error) {
+// getResources fetches the specified resource(s) from the cluster and returns
+// them as 'collection' interface
+func (g *GetCommand) getResources(client auth.ClientI) (collection, error) {
 	if g.ref.Kind == "" {
 		return nil, trace.BadParameter("specify resource to list, e.g. 'tctl get roles'")
 	}
@@ -1063,24 +1065,6 @@ func (g *GetCommand) getCollection(client auth.ClientI) (collection, error) {
 			return nil, trace.Wrap(err)
 		}
 		return &userCollection{users: users}, nil
-	case services.KindNode:
-		nodes, err := client.GetNodes(g.namespace)
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &serverCollection{servers: nodes}, nil
-	case services.KindAuthServer:
-		servers, err := client.GetAuthServers()
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &serverCollection{servers: servers}, nil
-	case services.KindProxy:
-		servers, err := client.GetAuthServers()
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &serverCollection{servers: servers}, nil
 	case services.KindRole:
 		if g.ref.Name == "" {
 			roles, err := client.GetRoles()
@@ -1094,19 +1078,6 @@ func (g *GetCommand) getCollection(client auth.ClientI) (collection, error) {
 			return nil, trace.Wrap(err)
 		}
 		return &roleCollection{roles: []services.Role{role}}, nil
-	case services.KindNamespace:
-		if g.ref.Name == "" {
-			namespaces, err := client.GetNamespaces()
-			if err != nil {
-				return nil, trace.Wrap(err)
-			}
-			return &namespaceCollection{namespaces: namespaces}, nil
-		}
-		ns, err := client.GetNamespace(g.ref.Name)
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &namespaceCollection{namespaces: []services.Namespace{*ns}}, nil
 	case services.KindTrustedCluster:
 		if g.ref.Name == "" {
 			trustedClusters, err := client.GetTrustedClusters()
@@ -1120,18 +1091,6 @@ func (g *GetCommand) getCollection(client auth.ClientI) (collection, error) {
 			return nil, trace.Wrap(err)
 		}
 		return &trustedClusterCollection{trustedClusters: []services.TrustedCluster{trustedCluster}}, nil
-	case services.KindClusterAuthPreference:
-		cap, err := client.GetClusterAuthPreference()
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &authPreferenceCollection{AuthPreference: cap}, nil
-	case services.KindUniversalSecondFactor:
-		universalSecondFactor, err := client.GetUniversalSecondFactor()
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		return &universalSecondFactorCollection{UniversalSecondFactor: universalSecondFactor}, nil
 	}
 
 	return nil, trace.BadParameter("'%v' is not supported", g.ref.Kind)
