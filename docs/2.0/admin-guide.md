@@ -1085,7 +1085,7 @@ scp_if_ssh = True
 ## High Availability
 
 Usually there are two ways to achieve high availability. You can "outsource"
-this function to the infrastructure, for example by using a highly available
+this function to the infrastructure, for example by using highly available
 network-based disk volumes (similar to AWS EBS) and by migrating a failed VM to
 a new host. In this scenario there's nothing Teleport-specific to be done.
 
@@ -1096,14 +1096,14 @@ to run in a highly available fashion.
 #### Run multiple instances of Teleport Auth Server 
 
   For this to work you must switch to a highly available secrets back-end first. 
-  Also, you must tell each node in a cluster that there are
+  Also, you must tell each node in a cluster that there is
   more than one auth server available. The are two ways to do this:
 
   * Use a load balancer to create a single auth API access point (AP) and
-    specify this AP in `auth_servers` section of Teleport configuration for
+    specify this AP in the `auth_servers` section of Teleport configuration for
     all nodes in a cluster.
   * If a load balancer is not an option, you must specify each instance of an 
-    auth server in `auth_servers` section of Teleport configuration.
+    auth server in the `auth_servers` section of Teleport configuration.
 
 #### Run multiple instances of Teleport Proxy 
 
@@ -1136,13 +1136,13 @@ secrets like keys and user records will be stored.
 
 To configure Teleport for using etcd as a storage back-end:
 
-* Install etcd and configure peer and client TLS authentication using
+* Install etcd and configure peer and client TLS authentication using the
    [etcd security guide](https://coreos.com/etcd/docs/latest/security.html).
 
 * Configure all Teleport Auth servers to use etcd in the "storage" section of
   the config file as shown below.
-* Deploy several auth servers connected to etcd back-end.
-* Deploy several proxy nodes that have `auth_servers` pointed to list of auth servers to connect to.
+* Deploy several auth servers connected to the etcd back-end.
+* Deploy several proxy nodes that have `auth_servers` pointed to a list of auth servers to connect to.
 
 ```yaml
 teleport:
