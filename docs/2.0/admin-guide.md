@@ -726,7 +726,7 @@ $ tsh --proxy=proxy play 4c146ec8-eab6-11e6-b1b3-40167e68e931
 
 ## Trusted Clusters
 
-Teleport allows to partition your infrastructure into multiple clusters. Some clusters can be 
+Teleport allows you to partition your infrastructure into multiple clusters. Some clusters can be 
 located behind firewalls without any open ports. They can also have their own restrictions on
 which users have access.
 
@@ -988,7 +988,7 @@ First, you need to export the public keys of cluster members. This has to be don
 on a node which runs Teleport auth server:
 
 ```bash
-$ tctl auth --type=host export > cluster_node_keys
+$ tctl auth export --type=host > cluster_node_keys
 ```
 
 On your client machine, you need to import these keys. It will allow your OpenSSH client
@@ -1044,7 +1044,7 @@ $ ssh root@database.work.example.com
 ```
 
 !!! tip "NOTE":
-    Teleport uses OpenSSH certificates instead of keys which means you can not connect
+    Teleport uses OpenSSH certificates instead of keys which means you cannot connect
     to a Teleport node by IP address. You have to connect by DNS name. This is because
     OpenSSH ensures the DNS name of the node you are connecting is listed under
     the `Principals` section of the OpenSSH certificate to verify you are connecting
@@ -1073,7 +1073,7 @@ To allow access for all users:
 
 ## Integrating with Ansible
 
-Ansible is uses the OpenSSH client by default. This makes it compatible with Teleport without any extra work, except configuring OpenSSH client to work with Teleport Proxy:
+Ansible uses the OpenSSH client by default. This makes it compatible with Teleport without any extra work, except configuring OpenSSH client to work with Teleport Proxy:
 
 * configure your OpenSSH to connect to Teleport proxy and user `tsh agent` socket
 * enable scp mode in the Ansible config file (default is `/etc/ansible/ansible.cfg`):
